@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Marks Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg1: #e3f2fd; --bg2: #bbdefb; --card: #ffffff; --text: #0d47a1;
+      --muted: #444; --accent: #1976d2; --accent-2: #1565c0; --dash: #2196f3;
+    } 
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to right, #e3f2fd, #ffffff); 
+  margin: 0;
+  padding: 0;
+  color: #333;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+  body.dark-mode {
+    --bg1: #212121; --bg2: #424242; --card: #2e2e2e; --text: #90caf9;
+    --muted: #ddd; --accent: #42a5f5; --accent-2: #1e88e5; --dash: #64b5f6;
+    color: #f5f5f5;
+    background: linear-gradient(to right, var(--bg1), var(--bg2));
+    }
+    .container {
+      max-width: 880px; margin: auto; background: var(--card);
+      padding: 30px; border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      transition: background 0.3s ease, color 0.3s ease;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      border: 1px solid #cfd8dc;
+      border: 1px solid rgba(0,0,0,0.05);
+      background-repeat: var(--accent);
+      background-blend-mode: color;
+      display:-moz-grid ;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      color:whitesmoke;
+    }
+    .title {
+      font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: .3px; print-color-adjust: exact;
+    }
+    .theme-toggle {
+      background: linear-gradient(90deg, #ff9800 60%, #ffd54f 100%);
+      border: none;
+      color: #222;
+      padding: 10px 10px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,.13);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+    .theme-toggle:hover { transform: translateY(-1px) scale(1.02); }
+    label {
+      display: block; margin-top: 14px; font-weight: 700; color: var(--muted);
+      border-radius: 10px;
+    }
+    input, select, button {
+      width: 90%; padding: 11px 12px; margin-top: 6px; border-radius: 10px; border: 1px solid #cfcfcf;
+      outline: none; transition: box-shadow .2s ease, border-color .2s ease;
+      background-color: white;
+      font-size: 15px; color: #212121;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    }
+    body.dark-mode input, body.dark-mode select {
+      background: #3a3a3a; color: #fff; border-color:black;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 4px rgba(25,118,210,.15);
+    }
+    .btn {
+      background: var(--accent); color: white; border: none; margin-top: 18px;
+      font-weight: 800; cursor: pointer; transition: background .25s ease, transform .15s ease;
+      box-shadow: 0 6px 18px rgba(25,118,210,.25);
+    }
+    .btn:hover { background: var(--accent-2); transform: translateY(-1px); }
+    .result {
+      margin-top: 24px; font-size: 16px;
+      background: rgba(33,150,243,0.06); border-radius: 12px; padding: 16px;
+      border: 1px dashed var(--dash);
+    }
+    .result table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .result th, .result td { border: 1px solid #cfd8dc; padding: 8px; text-align: center; }
+    body.dark-mode .result { background: rgba(100,181,246,.08); }
+    body.dark-mode .result th, body.dark-mode .result td { border-color: #666; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .download-box {
+      margin-top: 22px; text-align: center; padding: 14px;
+      border: 2px dashed var(--dash); border-radius: 12px;
+      background: rgba(33,150,243,.08);
+    }
+    body.dark-mode .download-box { background: rgba(100,181,246,.12); }
+    canvas { margin-top: 20px; background: #fff; border-radius: 12px; }
+    .hint { font-size: 12px; opacity: .8; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+    <div class="title">📘 Student Performance Analyzer</div>
+      <button class="theme-toggle" onclick="toggleTheme()">🌗 Toggle Theme</button>
+    </div>
+    <marquee behavior="alternate" scrollamount="4" class="hint" style="
+        background: linear-gradient(90deg, #1976d2 0%, #64b5f6 100%);
+        color: #fff;
+        font-weight: bold;
+        font-size: 15px;
+        border-radius: 8px;
+        padding: 7px 0;
+        box-shadow: 0 2px 10px rgba(25,118,210,0.10);
+        letter-spacing: 1px;
+        border: 1.5px solid #1565c0;
+        margin-bottom: 18px;
+        text-shadow: 0 1px 4px #1565c0;
+        background-color: darkviolet;
+    ">🎯 Analyze your semester marks! 🚀</marquee>
+
+    <div class="grid">
+      <div>
+        <label>Student Name</label>
+        <input type="text" id="studentName" placeholder="Enter Student Name" />
+      </div>
+      <div>
+        <label>Roll Number</label>
+        <input type="text" id="rollNumber" placeholder="Enter Roll Number" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label>Select Year</label>
+        <select id="year">
+          <option value="">-- Select Year --</option>
+          <option value="1">1st Year</option>
+          <option value="2">2nd Year</option>
+          <option value="3">3rd Year</option>
+          <option value="4">4th Year</option>
+        </select>
+      </div>
+      <div>
+        <label>Select Semester</label>
+        <select id="semester" onchange="if(document.getElementById('department').value){loadSubjects();}else{alert('Please select Department first.');this.selectedIndex=0;}">
+          <option value="">-- Select Semester --</option>
+          <option value="CSE-1-1">Sem 1 (1-1)</option>
+          <option value="CSE-1-2">Sem 2 (1-2)</option>
+          <option value="CSE-2-1">Sem 3 (2-1)</option>
+          <option value="CSE-2-2">Sem 4 (2-2)</option>
+          <option value="CSE-3-1">Sem 5 (3-1)</option>
+          <option value="CSE-3-2">Sem 6 (3-2)</option>
+          <option value="CSE-4-1">Sem 7 (4-1)</option>
+          <option value="CSE-4-2">Sem 8 (4-2)</option>
+        </select>
+      </div>
+    </div>
+    <div>
+        <label>Select Department</label>
+        <select id="department" onchange="updateSemesterOptions()">
+            <option value="">-- Select Department --</option>
+            <option value="cse">CSE</option>
+            <option value="ece">ECE</option>
+            <option value="eee">EEE</option>
+            <option value="civil">Civil</option>
+            <option value="ai">AI</option>
+            <option value="mech">Mechanical</option>
+        </select>
+    </div>
+    <script>
+        function updateSemesterOptions() {
+            const dept = document.getElementById("department").value;
+            const semSelect = document.getElementById("semester");
+            // Save selected semester to restore if possible
+            const prevSem = semSelect.value;
+            // Remove all options except the first
+            while (semSelect.options.length > 1) semSelect.remove(1);
+            if (!dept || dept.toUpperCase() === "CSE") {
+                // Default CSE semesters
+                semSelect.innerHTML = `
+                    <option value="">-- Select Semester --</option>
+                    <option value="CSE-1-1">Sem 1 (1-1)</option>
+                    <option value="CSE-1-2">Sem 2 (1-2)</option>
+                    <option value="CSE-2-1">Sem 3 (2-1)</option>
+                    <option value="CSE-2-2">Sem 4 (2-2)</option>
+                    <option value="CSE-3-1">Sem 5 (3-1)</option>
+                    <option value="CSE-3-2">Sem 6 (3-2)</option>
+                    <option value="CSE-4-1">Sem 7 (4-1)</option>
+                    <option value="CSE-4-2">Sem 8 (4-2)</option>
+                `;
+            } else {
+                // For other departments, use DEPT-YEAR-SEM keys in uppercase
+                for (let year = 1; year <= 4; year++) {
+                    for (let sem = 1; sem <= 2; sem++) {
+                        const key = `${dept.toUpperCase()}-${year}-${sem}`;
+                        if (subjectData[key]) {
+                            const semLabel = `Sem ${((year-1)*2)+sem} (${year}-${sem})`;
+                            const opt = document.createElement("option");
+                            opt.value = key;
+                            opt.textContent = semLabel;
+                            semSelect.appendChild(opt);
+                        }
+                    }
+                }
+            }
+            // Try to restore previous selection if possible
+            for (let i = 0; i < semSelect.options.length; i++) {
+                if (semSelect.options[i].value === prevSem) {
+                    semSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            // Hide marks form and result
+            document.getElementById("marksForm").style.display = "none";
+            document.getElementById("result").innerHTML = "";
+            document.getElementById("barChart").style.display = "none";
+        }
+
+        // Patch loadSubjects to use department+semester key if not CSE
+        const origLoadSubjects = loadSubjects;
+        window.loadSubjects = function() {
+            const dept = document.getElementById("department")?.value || "CSE";
+            let sem = document.getElementById("semester").value;
+            // For non-CSE, sem is already DEPT-YEAR-SEM in uppercase
+            if (dept.toUpperCase() === "CSE" || !dept) {
+                origLoadSubjects();
+            } else {
+                sem = sem.toUpperCase();
+                const container = document.getElementById("subjectsContainer");
+                const form = document.getElementById("marksForm");
+                container.innerHTML = "";
+                if (!subjectData[sem]) { form.style.display = "none"; return; }
+                subjectData[sem].forEach(subject => {
+                    const wrap = document.createElement("div");
+                    const label = document.createElement("label"); label.innerText = subject;
+                    const input = document.createElement("input");
+                    input.type = "number"; input.min = "0"; input.max = "100"; input.step = "1";
+                    input.placeholder = `Enter marks for ${subject} (0–100)`;
+                    input.setAttribute("data-subject", subject);
+                    wrap.appendChild(label); wrap.appendChild(input);
+                    container.appendChild(wrap);
+                });
+                form.style.display = "block";
+                document.getElementById("result").innerHTML = "";
+                document.getElementById("barChart").style.display = "none";
+            }
+        };
+    </script>
+
+    <form id="marksForm" style="display:none;">
+      <div id="subjectsContainer"></div>
+      <button type="button" class="btn" onclick="calculate()">Analyze</button>
+    </form>
+    
+    <div class="result" id="result" style="display:block;"></div>
+    <canvas id="barChart" height="220" style="display:none;"></canvas>
+
+    <div class="download-box">
+      <button class="btn" onclick="downloadPDF()">📥 Download PDF (includes chart)</button>
+      <div class="hint">Tip: Click “Analyze” first so the chart is generated.</div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Data ----------
+    const subjectData = {
+      "CSE-1-1": ["LAC", "CHEMISTRY", "CPDS", "BEEE", "CHEMISTRY LAB", "BEEE LAB", "IT WORKSHOP", "ENGG WORKSHOP", "CPDS LAB"],
+      "CSE-1-2": ["P&S", "APPLIED PHYSICS", "PPDS", "CE", "ENGG DRAWING", "ENGG GRAPHICS LAB", "PPDS LAB", "CE LAB","AP LAB"],
+      "CSE-2-1": ["DMGT", "JAVA", "ADS&A", "DE&MP", "CO", "ADS&A LAB", "JAVA LAB", "DE&MP LAB", "WAD LAB"],
+      "CSE-2-2": ["DBMS", "OS", "SE", "DSSM", "OB", "DTI", "OS LAB", "SE LAB", "DBMS LAB", "R- LAB"],
+      "CSE-3-1": ["CN", "DA&DM", "AI", "FLAT", "ES", "AWAD LAB", "AI LAB", "CN LAB", "CSP PROJECT"],
+      "CSE-3-2": ["ML", "CD", "VLSI", "ST", "IOT", "IPR", "ML LAB", "CD LAB", "IOT LAB", "SOFT SKILLS"],
+      "CSE-4-1": ["FSD", "PCS", "PCMC", "CNS", "MS", "CC", "MAD LAB"],
+      "CSE-4-2": ["Major Project", "Seminar", "Internship", "Elective-II"],
+
+    // ECE Subjects
+    "ECE-1-1": ["Maths-I", "Engineering Physics", "Basic Electrical Engineering", "Programming for Problem Solving", "Engineering Graphics", "Physics Lab", "Programming Lab"],
+    "ECE-1-2": ["Maths-II", "Engineering Chemistry", "Basic Electronics Engineering", "English", "Environmental Science", "Chemistry Lab", "Electronics Lab"],
+    "ECE-2-1": ["Mathematics-III", "Electronic Devices", "Network Analysis", "Signals and Systems", "Switching Theory & Logic Design", "Electronic Devices Lab", "STLD Lab"],
+    "ECE-2-2": ["Probability Theory & Stochastic Process", "Analog Circuits", "Pulse & Digital Circuits", "Random Variables", "Analog Circuits Lab", "Pulse & Digital Circuits Lab"],
+    "ECE-3-1": ["Linear IC Applications", "Digital Communications", "Control Systems", "Microprocessors & Microcontrollers", "IC Applications Lab", "Microprocessors Lab"],
+    "ECE-3-2": ["VLSI Design", "Microwave Engineering", "Digital Signal Processing", "Digital Communications Lab", "DSP Lab"],
+    "ECE-4-1": ["Embedded Systems", "Optical Communications", "Elective-I", "Elective-II", "Embedded Systems Lab"],
+    "ECE-4-2": ["Project Work", "Seminar", "Comprehensive Viva"],
+
+    // EEE Subjects
+    "EEE-1-1": ["Maths-I", "Engineering Physics", "Basic Electrical Engineering", "Programming for Problem Solving", "Engineering Graphics", "Physics Lab", "Programming Lab"],
+    "EEE-1-2": ["Maths-II", "Engineering Chemistry", "English", "Environmental Science", "Electrical Circuits", "Chemistry Lab", "Electrical Circuits Lab"],
+    "EEE-2-1": ["Mathematics-III", "Electrical Machines-I", "Electromagnetic Fields", "Analog Electronics", "Electrical Machines Lab-I", "Analog Electronics Lab"],
+    "EEE-2-2": ["Power Systems-I", "Electrical Machines-II", "Control Systems", "Power Systems Lab", "Electrical Machines Lab-II"],
+    "EEE-3-1": ["Power Electronics", "Measurements & Instrumentation", "Microprocessors", "Power Electronics Lab", "Measurements Lab"],
+    "EEE-3-2": ["Switchgear & Protection", "Renewable Energy Sources", "Elective-I", "Elective-II", "Switchgear Lab"],
+    "EEE-4-1": ["Utilization of Electrical Energy", "Elective-III", "Elective-IV", "Project Phase-I"],
+    "EEE-4-2": ["Project Phase-II", "Seminar", "Comprehensive Viva"],
+
+    // Civil Subjects
+    "CIVIL-1-1": ["Maths-I", "Engineering Physics", "Engineering Mechanics", "Programming for Problem Solving", "Engineering Graphics", "Physics Lab", "Programming Lab"],
+    "CIVIL-1-2": ["Maths-II", "Engineering Chemistry", "Basic Civil Engineering", "English", "Environmental Science", "Chemistry Lab", "Civil Engineering Lab"],
+    "CIVIL-2-1": ["Mathematics-III", "Strength of Materials-I", "Fluid Mechanics", "Surveying", "Strength of Materials Lab", "Surveying Lab"],
+    "CIVIL-2-2": ["Building Materials", "Structural Analysis", "Geotechnical Engineering", "Concrete Technology", "Geotechnical Lab", "Concrete Lab"],
+    "CIVIL-3-1": ["Design of RC Structures", "Transportation Engineering", "Water Resources Engineering", "RC Structures Lab", "Transportation Lab"],
+    "CIVIL-3-2": ["Design of Steel Structures", "Environmental Engineering", "Elective-I", "Steel Structures Lab", "Environmental Lab"],
+    "CIVIL-4-1": ["Construction Management", "Elective-II", "Elective-III", "Project Phase-I"],
+    "CIVIL-4-2": ["Project Phase-II", "Seminar", "Comprehensive Viva"],
+
+    // AI Subjects
+    "AI-1-1": ["Maths-I", "Engineering Physics", "Programming for Problem Solving", "Basic Electrical Engineering", "Engineering Graphics", "Physics Lab", "Programming Lab"],
+    "AI-1-2": ["Maths-II", "Engineering Chemistry", "English", "Environmental Science", "Data Structures", "Chemistry Lab", "Data Structures Lab"],
+    "AI-2-1": ["Mathematics-III", "Probability & Statistics", "Object Oriented Programming", "Discrete Mathematics", "OOP Lab", "Probability Lab"],
+    "AI-2-2": ["Artificial Intelligence", "Machine Learning", "Database Management Systems", "AI Lab", "ML Lab", "DBMS Lab"],
+    "AI-3-1": ["Deep Learning", "Natural Language Processing", "Computer Vision", "Deep Learning Lab", "NLP Lab"],
+    "AI-3-2": ["Reinforcement Learning", "Big Data Analytics", "Elective-I", "Big Data Lab"],
+    "AI-4-1": ["Ethics in AI", "Elective-II", "Elective-III", "Project Phase-I"],
+    "AI-4-2": ["Project Phase-II", "Seminar", "Comprehensive Viva"],
+
+    // Mechanical Subjects
+    "MECH-1-1": ["Maths-I", "Engineering Physics", "Engineering Mechanics", "Programming for Problem Solving", "Engineering Graphics", "Physics Lab", "Programming Lab"],
+    "MECH-1-2": ["Maths-II", "Engineering Chemistry", "Basic Mechanical Engineering", "English", "Environmental Science", "Chemistry Lab", "Mechanical Workshop"],
+    "MECH-2-1": ["Mathematics-III", "Thermodynamics", "Mechanics of Solids", "Manufacturing Process", "Thermodynamics Lab", "Manufacturing Lab"],
+    "MECH-2-2": ["Fluid Mechanics", "Kinematics of Machines", "Material Science", "Fluid Mechanics Lab", "Material Science Lab"],
+    "MECH-3-1": ["Dynamics of Machines", "Machine Design", "Heat Transfer", "Dynamics Lab", "Heat Transfer Lab"],
+    "MECH-3-2": ["CAD/CAM", "Automobile Engineering", "Elective-I", "CAD/CAM Lab"],
+    "MECH-4-1": ["Industrial Engineering", "Elective-II", "Elective-III", "Project Phase-I"],
+    "MECH-4-2": ["Project Phase-II", "Seminar", "Comprehensive Viva"]
+    };
+    // ---------- Theme ----------
+    (function initTheme(){
+      const saved = localStorage.getItem("sma-theme");
+      if (saved === "dark") document.body.classList.add("dark-mode");
+    })();
+    function toggleTheme() {
+      document.body.classList.toggle("dark-mode");
+      localStorage.setItem("sma-theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+    }
+    function loadSubjects() {
+      const sem = document.getElementById("semester").value;
+      const container = document.getElementById("subjectsContainer");
+      const form = document.getElementById("marksForm");
+      container.innerHTML = "";
+      if (!subjectData[sem]) { form.style.display = "none"; return; }
+      subjectData[sem].forEach(subject => {
+        const wrap = document.createElement("div");
+        const label = document.createElement("label"); label.innerText = subject;
+        const input = document.createElement("input");
+        input.type = "number"; input.min = "0"; input.max = "100"; input.step = "1";
+        input.placeholder = `Enter marks for ${subject} (0–100)`;
+        input.setAttribute("data-subject", subject);
+        wrap.appendChild(label); wrap.appendChild(input);
+        container.appendChild(wrap);
+      });
+
+      form.style.display = "block";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("barChart").style.display = "none";
+    }
+    let chartInstance = null;
+
+    function calculate() {
+      const inputs = document.querySelectorAll("#subjectsContainer input");
+      const studentName = document.getElementById("studentName").value.trim();
+      const rollNumber = document.getElementById("rollNumber").value.trim();
+      const year = document.getElementById("year").value;
+      const sem = document.getElementById("semester").value;
+
+      if (!studentName || !rollNumber) {
+        alert("Please enter student name and roll number.");
+        return;
+      }
+      if (!sem) {
+        alert("Please select a semester.");
+        return;
+      }
+
+      let total = 0, count = 0;
+      const results = [];
+
+      for (const input of inputs) {
+        const marks = Number(input.value);
+        if (Number.isNaN(marks) || input.value === "") {
+          alert("Please enter all marks.");
+          return;
+        }
+        if (marks < 0 || marks > 100) {
+          alert("Marks must be between 0 and 100.");
+          return;
+        }
+        total += marks; count++;
+        results.push({ subject: input.getAttribute("data-subject"), marks });
+      }
+
+      const percentage = total / count;
+      let resultHTML = `
+        <div><strong>Name:</strong> ${studentName} &nbsp; | &nbsp; <strong>Roll No:</strong> ${rollNumber}</div>
+        <div><strong>Year:</strong> ${year || "-"} &nbsp; | &nbsp; <strong>Semester:</strong> ${sem}</div>
+        <table>
+          <tr><th>Subject</th><th>Marks</th><th>Grade</th></tr>
+      `;
+
+      results.forEach(r => {
+        const grade = getGrade(r.marks);
+        resultHTML += `<tr><td>${r.subject}</td><td>${r.marks}</td><td>${grade}</td></tr>`;
+      });
+
+      resultHTML += `</table>
+        <br><strong>Total Marks:</strong> ${total}
+        <br><strong>Percentage:</strong> ${percentage.toFixed(2)}%
+      `;
+
+      document.getElementById("result").innerHTML = resultHTML;
+
+      drawChart(results);
+    }
+
+    function getGrade(marks) {
+      if (marks >= 90) return "S";
+      if (marks >= 80) return "A";
+      if (marks >= 70) return "B";
+      if (marks >= 60) return "C";
+      if (marks >= 50) return "D";
+      if (marks >= 40) return "E";
+      return "F";
+    }
+
+    function drawChart(results) {
+      const ctx = document.getElementById("barChart").getContext("2d");
+      const labels = results.map(r => r.subject);
+      const data = results.map(r => r.marks);
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Marks",
+            data: data,
+            backgroundColor: "#64b5f6"
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: true,
+          scales: {
+            y: { beginAtZero: true, suggestedMax: 100 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+          }
+        }
+      });
+
+      document.getElementById("barChart").style.display = "block";
+    }
+
+    // ---------- PDF (with chart) ----------
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const name = (document.getElementById("StudentName").value || "").trim();
+      const roll = (document.getElementById("RollNumber").value || "").trim();
+      const year = document.getElementById("Year").value || "-";
+      const sem = document.getElementById("Semester").value || "-";
+      const resultContent = document.getElementById("result").innerText.trim();
+
+      if (!name || !roll || !sem || !resultContent) {
+        alert("Please fill details and click Analyze before downloading the PDF.");
+        return;
+      }
+      // Create PDF
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+doc.setFontSize(16);
+doc.text("Student Marks Analyzer Report", 14, 18);
+doc.setFontSize(12);
+doc.text(`Name: ${name}`, 14, 28);
+doc.text(`Roll No: ${roll}`, 14, 36);
+doc.text(`Year: ${year}`, 14, 44);
+doc.text(`Semester: ${sem}`, 14, 52);
+doc.setFontSize(12);
+doc.setFillColor(33, 150, 243);
+doc.rect(0, 10, doc.internal.pageSize.getWidth(), 12, "F");
+doc.setTextColor(255, 255, 255);
+doc.setFontSize(16);
+doc.text("Student Marks Analyzer Report", 14, 18);
+doc.setTextColor(33, 33, 33);
+doc.setFontSize(12);
+doc.text(`Roll No:`, 16, 38);
+doc.text(`Year:`, 80, 30);
+doc.text(`Semester:`, 80, 38);
+doc.setFont("helvetica", "normal");    
+doc.text(`${name}`, 36, 30);
+doc.text(`${roll}`, 36, 38);
+doc.text(`${year}`, 100, 30);
+doc.text(`${sem}`, 100, 38);
+doc.setFillColor(227, 242, 253);
+doc.roundedRect(12, 60, 186, 60, 4, 4, "F");
+doc.setFont("helvetica", "normal");
+doc.setTextColor(33, 33, 33);
+const wrapped = doc.splitTextToSize(resultContent, 182);
+doc.text(wrapped, 14, 64);
+const chartCanvas = document.getElementById("barChart");
+if (!chartCanvas || !chartInstance) {
+alert("Chart not found. Please click Analyze first.");
+return;
+}
+const imgData = chartCanvas.toDataURL("image/png", 1.0);
+doc.addPage("a4", "portrait");
+doc.setFontSize(14);
+doc.text("Marks Chart", 14, 18);
+const imgProps = doc.getImageProperties(imgData);
+const pdfWidth = doc.internal.pageSize.getWidth() - 28; // margins 14 + 14
+const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+const y = 26;
+doc.addImage(imgData, "PNG", 14, y, pdfWidth, pdfHeight);
+doc.setFontSize(10);
+doc.setTextColor(120, 120, 120);
+doc.downloadPDF();
+doc.text("Generated by Student Marks Analyzer", 14, doc.internal.pageSize.getHeight() - 10);
+doc.save(`${name}_marks_report.pdf`);
+}
+</script>
+</body>
+</html>
